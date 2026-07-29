@@ -7,5 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Your scraper entrypoint. Adjust to your actual module.
 CMD ["python", "run.py"]
