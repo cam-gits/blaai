@@ -1,0 +1,70 @@
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.28.2
+    ports:
+      - "${WEAVIATE_HTTP_PORT}:8080"
+      - "${WEAVIATE_GRPC_PORT}:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      ENABLE_MODULES: ""
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  api:
+    build: ./api
+    env_file: .env
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/blaa.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Optional: run Ollama inside Compose instead of on the host.
+  # Enable with:  docker compose --profile with-ollama up
+  # and set OLLAMA_BASE_URL=http://ollama:11434 in .env
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["with-ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # Run with:  docker compose run --rm scraper
+  scraper:
+    build: ./scraper
+    profiles: ["jobs"]
+    env_file: .env
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  weaviate_data:
+  ollama_data:
