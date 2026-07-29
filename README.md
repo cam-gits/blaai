@@ -1,4 +1,4 @@
-#blaai
+# blaai
 
 A RAG chatbot aimed at helping people find local government services in Waterford Ireland.
 
