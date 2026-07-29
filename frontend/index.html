@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blaa — Waterford council answers</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; }
+    #q { width: 100%; padding: 0.6rem; font-size: 1rem; box-sizing: border-box; }
+    button { margin-top: 0.6rem; padding: 0.6rem 1.2rem; font-size: 1rem; cursor: pointer; }
+    #answer { margin-top: 1.5rem; white-space: pre-wrap; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Blaai</h1>
+  <p class="muted">Ask about Waterford council services.</p>
+  <input id="q" type="text" placeholder="e.g. How do I report a pothole?" />
+  <button id="send">Ask</button>
+  <div id="answer"></div>
+
+  <script>
+    const q = document.getElementById("q");
+    const answer = document.getElementById("answer");
+
+    document.getElementById("send").addEventListener("click", async () => {
+      const question = q.value.trim();
+      if (!question) return;
+      answer.textContent = "…";
+      try {
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        const data = await res.json();
+        answer.textContent = data.answer ?? JSON.stringify(data);
+      } catch (e) {
+        answer.textContent = "Error: " + e.message;
+      }
+    });
+  </script>
+</body>
+</html>
