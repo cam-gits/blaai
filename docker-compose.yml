@@ -36,7 +36,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/blaa.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/blaai.conf:/etc/nginx/conf.d/default.conf:ro
       - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - api
