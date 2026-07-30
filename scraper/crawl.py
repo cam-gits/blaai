@@ -10,11 +10,13 @@ import httpx
 from bs4 import BeautifulSoup   
 
 SEED_URLS = [
-    "https://www.waterfordcouncil.ie/"
+    "https://www.waterfordcouncil.ie/services/"
+    
 ]
 
 ALLOWED_PREFIXES = [
-    "waterfordcouncil.ie/"
+    "waterfordcouncil.ie/services"
+    
 ]
 
 OUT_PATH = Path("data/raw/pages.jsonl")
