@@ -4,4 +4,4 @@ __pycache__/
 .venv/
 venv/
 data/
-.jsonl
+*.jsonl
