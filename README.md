@@ -11,7 +11,7 @@ The knowledgebase will include broad information around local government and pub
 - [x] Project skeleton
 - [x] Containerise + verify
 - [x] Build + test scraper
-- [ ] Source data
+- [x] Source data
 - [ ] Extract + Chunk
 - [ ] Review gate
 - [ ] Schema
