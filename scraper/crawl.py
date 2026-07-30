@@ -10,11 +10,11 @@ import httpx
 from bs4 import BeautifulSoup   
 
 SEED_URLS = [
-    "https://www.waterfordcouncil.ie/services/"
+    "https://www.waterfordcouncil.ie/"
 ]
 
 ALLOWED_PREFIXES = [
-    "www.waterfordcouncil.ie/services"
+    "waterfordcouncil.ie/"
 ]
 
 OUT_PATH = Path("data/raw/pages.jsonl")
@@ -22,7 +22,7 @@ OUT_PATH = Path("data/raw/pages.jsonl")
 USER_AGENT = "BlaaBot/0.1 (civic information indexer)"
 REQUEST_DELAY_SECONDS = 1.0
 TIMEOUT_SECONDS = 20.0
-MAX_PAGES = 500
+MAX_PAGES = 3000
 MAX_DEPTH = 6
 WANT_CONTENT_TYPE = "text/html"
 
@@ -44,7 +44,8 @@ def canonicalise(url: str) -> str:
 
 def in_scope(url: str) -> bool:
     parts = urlparse(url)
-    key = f"{parts.netloc}{parts.path}"
+    host = parts.netloc.removeprefix("www.")
+    key = f"{host}{parts.path}"
     return any(key.startswith(prefix) for prefix in ALLOWED_PREFIXES)
 
 
