@@ -13,7 +13,7 @@ The knowledgebase will primarily include broad information around local governme
 - [x] Build + test scraper
 - [x] Source data
 - [x] Extract + Chunk
-- [ ] Review gate
+- [x] Review gate
 - [ ] Schema
 - [ ] Retrieval
 - [ ] Hardening
