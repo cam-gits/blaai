@@ -65,16 +65,22 @@ services:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
 
   ingest:
     build: ./ingest
     profiles: ["jobs"]
     env_file: .env
+    environment:
+      - WEAVIATE_HOST=weaviate
     depends_on:
       weaviate:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
 
 volumes:
   weaviate_data:

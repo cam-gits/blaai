@@ -14,7 +14,7 @@ The knowledgebase will primarily include broad information around local governme
 - [x] Source data
 - [x] Extract + Chunk
 - [x] Review gate
-- [ ] Schema
+- [x] Schema
 - [ ] Retrieval
 - [ ] Hardening
 - [ ] Frontend
