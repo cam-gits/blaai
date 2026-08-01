@@ -6,8 +6,8 @@ from tqdm import tqdm
 from pprint import pprint
 import os
 from dotenv import load_dotenv
-load_dotenv()
 
+load_dotenv()
 client = weaviate.connect_to_local()
 
 OLLAMA_ENDPOINT = os.getenv("OLLAMA_BASE_URL")

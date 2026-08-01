@@ -1,0 +1,4 @@
+weaviate-client==4.10.2
+python-dotenv
+tqdm
+selectolax

@@ -66,6 +66,16 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  ingest:
+    build: ./ingest
+    profiles: ["jobs"]
+    env_file: .env
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   weaviate_data:
   ollama_data:
