@@ -2,11 +2,15 @@ import json
 import re
 from typing import List, Dict, Optional
 from selectolax.parser import HTMLParser
+from collections import defaultdict
+from urllib.parse import urlparse, urlunparse
 
 IN_PATH = "data/raw/pages.jsonl"
 OUT_PATH = "data/raw/chunks.jsonl"
 
 THRESHOLD = 120  #min chunk length
+BOILERPLATE_MIN_PAGES = 4  #max chonk frequency
+SKIP_QUERY_FLAGS = ("preview=true",)
 CONTAINER_SELECTORS = ["main", "article", "div.entry-content", "div.content-area", "#content"]
 
 STRIP_SELECTORS = ["script", "style", "noscript", "svg", "nav", "header", "footer", "form", "div.vitamin-credits"]
@@ -14,6 +18,23 @@ STRIP_SELECTORS = ["script", "style", "noscript", "svg", "nav", "header", "foote
 
 def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
+
+
+def _canonical_url(url: str) -> str:
+    #collapse variants of same page
+    p = urlparse(url)
+    netloc = p.netloc.lower()
+    if netloc.startswith("www."):
+        netloc = netloc[4:]
+    return urlunparse(("https", netloc, p.path.rstrip("/") or "/", "", "", ""))
+
+
+def _page_frequency(records: List[Dict]) -> Dict[str, int]:
+    #identify repeated chunks
+    pages_per_text: Dict[str, set] = defaultdict(set)
+    for r in records:
+        pages_per_text[r["chunk"]].add(_canonical_url(r["URL"]))
+    return {text: len(urls) for text, urls in pages_per_text.items()}
 
 
 def _pick_container(tree: HTMLParser):
@@ -148,24 +169,46 @@ def load_pages(input_path: str):
 
 
 def chonk(input_path: str = IN_PATH, output_path: str = OUT_PATH) -> None:
+    output_path: str = OUT_PATH) -> None:
     pages = 0
     discarded = 0
-    total_chunks = 0
+    skipped = 0
+
+    records: List[Dict] = []
+    for obj in load_pages(input_path):
+        if any(flag in urlparse(obj["url"]).query for flag in SKIP_QUERY_FLAGS):
+            skipped += 1
+            continue
+        pages += 1
+        chunks = process_page(obj)
+        if not chunks:
+            discarded += 1
+            continue
+        records.extend(chunks)
+
+    #second pass to remove excess dupes (low numbers = legitamately reinforced data, high = boilerplate)
+    frequency = _page_frequency(records)
+    per_page_index: Dict[str, int] = defaultdict(int)
+    kept: List[Dict] = []
+    dropped = 0
+
+    for record in records:
+        if frequency[record["chunk"]] >= BOILERPLATE_MIN_PAGES:
+            dropped += 1
+            continue
+        record["chunk_index"] = per_page_index[record["URL"]]
+        per_page_index[record["URL"]] += 1
+        kept.append(record)
 
     with open(output_path, "w", encoding="utf-8") as out:
-        for obj in load_pages(input_path):
-            pages += 1
-            chunks = process_page(obj)
-            if not chunks:
-                discarded += 1
-                continue
-            for chunk in chunks:
-                out.write(json.dumps(chunk, ensure_ascii=False) + "\n")
-                total_chunks += 1
+        for record in kept:
+            out.write(json.dumps(record, ensure_ascii=False) + "\n")
 
     print(f"read {pages} pages from {input_path}")
+    print(f"skipped {skipped} preview/draft URLs")
     print(f"discarded {discarded} pages below the {THRESHOLD}-char gate")
-    print(f"wrote {total_chunks} chunks to {output_path}")
+    print(f"dropped {dropped} boilerplate chunks (text on >= {BOILERPLATE_MIN_PAGES} pages)")
+    print(f"wrote {len(kept)} chunks to {output_path}")
 
 
 def main() -> None:

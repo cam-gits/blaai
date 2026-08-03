@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from app import retrieval
-from config import DISTANCE_CUTOFF
 
 OLLAMA_BASE_URL = os.environ["OLLAMA_BASE_URL"]
 WEAVIATE_HTTP_PORT = os.environ.get("WEAVIATE_HTTP_PORT", "8080")
@@ -66,7 +65,6 @@ def ask(query: Query):
       3. Build a grounded prompt from retrieved chunks
       4. Stream the LLM response back
     """
-    chunks, top_distance = retrieval.search_db(app.state.collection, query.question)
-    top_url = chunks[0]["url"] if (chunks and top_distance is not None and top_distance < DISTANCE_CUTOFF) else "None"
+    answer, urls = retrieval.prompt(app.state.collection, query.question)
 
-    return {"received": query.question, "answer": top_url}
+    return {"received": query.question, "answer": answer}

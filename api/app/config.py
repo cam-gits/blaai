@@ -1,3 +1,8 @@
 ALPHA = 0.8
 LIMIT = 8
 DISTANCE_CUTOFF = 0.70  #edge somewhere in 0.69–0.71 - still to tune
+TEMPERATURE = 0.2
+TOP_P = 0.9
+NUM_CTX = 4096
+SEED = 42
+MAX_TOKENS = 500
