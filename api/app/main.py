@@ -3,16 +3,32 @@ Minimal Skeleton only
 """
 import os
 import httpx
+import weaviate
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from app import retrieval
+
 OLLAMA_BASE_URL = os.environ["OLLAMA_BASE_URL"]
 WEAVIATE_HTTP_PORT = os.environ.get("WEAVIATE_HTTP_PORT", "8080")
-WEAVIATE_URL = f"http://weaviate:8080"  # service name on the compose network
+WEAVIATE_HOST = os.environ["WEAVIATE_HOST"]
+WEAVIATE_URL = f"http://{WEAVIATE_HOST}:8080"
 LLM_MODEL = os.environ["LLM_MODEL"]
 
-app = FastAPI(title="Blaai API")
+COLLECTION_NAME = "blaai_collection"
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    #Open one Weaviate connection for the life of the process
+    app.state.client = weaviate.connect_to_local(host=WEAVIATE_HOST)
+    app.state.collection = app.state.client.collections.get(COLLECTION_NAME)
+    try:
+        yield
+    finally:
+        app.state.client.close()
+
+app = FastAPI(title="Blaai API", lifespan=lifespan)
 
 class Query(BaseModel):
     question: str
@@ -25,17 +41,17 @@ async def health():
 
 @app.get("/health/deps")
 async def health_deps():
-    """Confirm the API can actually reach its two dependencies."""
+    #Confirm the API can reach its dependencies
     results = {}
     async with httpx.AsyncClient(timeout=5.0) as client:
-        # Weaviate readiness
+        #Weaviate readiness
         try:
             r = await client.get(f"{WEAVIATE_URL}/v1/.well-known/ready")
             results["weaviate"] = "ok" if r.status_code == 200 else f"status {r.status_code}"
         except Exception as e:
             results["weaviate"] = f"unreachable: {e.__class__.__name__}"
 
-        # Ollama tags endpoint
+        #Ollama tags endpoint
         try:
             r = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
             results["ollama"] = "ok" if r.status_code == 200 else f"status {r.status_code}"
@@ -46,7 +62,7 @@ async def health_deps():
 
 
 @app.post("/ask")
-async def ask(query: Query):
+def ask(query: Query):
     """
     STUB. To build - RAG Flow
       1. Embed query.question via Ollama (EMBED_MODEL)
@@ -54,4 +70,6 @@ async def ask(query: Query):
       3. Build a grounded prompt from retrieved chunks
       4. Stream the LLM response back
     """
-    return {"received": query.question, "answer": "not implemented yet"}
+    result = retrieval.search_db(app.state.collection, query.question)
+
+    return {"received": query.question, "answer": result}

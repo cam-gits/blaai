@@ -14,6 +14,8 @@ services:
     volumes:
       - weaviate_data:/var/lib/weaviate
     restart: unless-stopped
+    depends_on:
+      - ollama
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/.well-known/ready"]
       interval: 10s
@@ -23,11 +25,13 @@ services:
   api:
     build: ./api
     env_file: .env
+    environment:
+      - WEAVIATE_HOST=weaviate
     depends_on:
       weaviate:
         condition: service_healthy
     extra_hosts:
-      - "host.docker.internal:host-gateway"   
+      - "host.docker.internal:host-gateway"
     expose:
       - "8000"
     restart: unless-stopped
@@ -43,17 +47,22 @@ services:
       - api
     restart: unless-stopped
 
-  # Optional: run Ollama inside Compose instead of on the host.
-  # Enable with:  docker compose --profile with-ollama up
-  # and set OLLAMA_BASE_URL=http://ollama:11434 in .env
   ollama:
     image: ollama/ollama:latest
-    profiles: ["with-ollama"]
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["sh", "-c", "ollama pull embeddinggemma:latest && ollama pull qwen2.5:7b"]
+    restart: "no"
 
   # Run with:  docker compose run --rm scraper
   scraper:
