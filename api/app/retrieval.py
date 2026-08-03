@@ -1,5 +1,7 @@
 import os
 import httpx
+from weaviate.classes.query import MetadataQuery, HybridFusion
+from config import ALPHA, LIMIT
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "embeddinggemma")
@@ -17,14 +19,27 @@ def search_db(collection, text: str):
     result = collection.query.hybrid(
         query=text,
         vector=query_vector,
-        alpha=0.8,
-        limit=8,
+        alpha=ALPHA,
+        limit=LIMIT,
+        fusion_type=HybridFusion.RELATIVE_SCORE,
+        return_metadata=MetadataQuery(score=True),
     )
-    return [
+    chunks = [
         {
             "url": obj.properties["url"],
             "heading": obj.properties["heading"],
             "chunk": obj.properties["chunk"],
+            "score": obj.metadata.score,
         }
         for obj in result.objects
     ]
+
+    gate = collection.query.near_vector(
+        near_vector=query_vector,
+        limit=1,
+        return_metadata=MetadataQuery(distance=True),
+    )
+    top_distance = gate.objects[0].metadata.distance if gate.objects else None
+
+    return chunks, top_distance
+

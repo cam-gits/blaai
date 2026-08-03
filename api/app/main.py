@@ -1,6 +1,3 @@
-"""
-Minimal Skeleton only
-"""
 import os
 import httpx
 import weaviate
@@ -9,6 +6,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from app import retrieval
+from config import DISTANCE_CUTOFF
 
 OLLAMA_BASE_URL = os.environ["OLLAMA_BASE_URL"]
 WEAVIATE_HTTP_PORT = os.environ.get("WEAVIATE_HTTP_PORT", "8080")
@@ -64,12 +62,11 @@ async def health_deps():
 @app.post("/ask")
 def ask(query: Query):
     """
-    STUB. To build - RAG Flow
-      1. Embed query.question via Ollama (EMBED_MODEL)
-      2. Hybrid search Weaviate (vector + BM25)
+    To do:
       3. Build a grounded prompt from retrieved chunks
       4. Stream the LLM response back
     """
-    result = retrieval.search_db(app.state.collection, query.question)
+    chunks, top_distance = retrieval.search_db(app.state.collection, query.question)
+    top_url = chunks[0]["url"] if (chunks and top_distance is not None and top_distance < DISTANCE_CUTOFF) else "None"
 
-    return {"received": query.question, "answer": result}
+    return {"received": query.question, "answer": top_url}

@@ -61,7 +61,7 @@ services:
       - ollama
     environment:
       OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["sh", "-c", "ollama pull embeddinggemma:latest && ollama pull qwen2.5:7b"]
+    entrypoint: ["sh", "-c", "ollama pull embeddinggemma:latest && ollama pull phi4-mini"]
     restart: "no"
 
   # Run with:  docker compose run --rm scraper
