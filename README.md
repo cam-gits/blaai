@@ -23,6 +23,7 @@ A FastAPI backend handles retrieval and prompt construction; answers are generat
 - [x] Review gate
 - [x] Schema
 - [x] Retrieval
+- [x] Generation
 - [ ] Hardening
 - [ ] Frontend
 - [ ] Deployment

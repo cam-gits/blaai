@@ -62,7 +62,6 @@ async def health_deps():
 def ask(query: Query):
     """
     To do:
-      3. Build a grounded prompt from retrieved chunks
       4. Stream the LLM response back
     """
     answer, urls = retrieval.prompt(app.state.collection, query.question)

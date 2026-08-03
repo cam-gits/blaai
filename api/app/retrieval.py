@@ -1,7 +1,7 @@
 import os
 import httpx
 from weaviate.classes.query import MetadataQuery, HybridFusion
-from app.config import ALPHA, LIMIT, TEMPERATURE, TOP_P, MAX_TOKENS, NUM_CTX, SEED, DISTANCE_CUTOFF
+from app.config import ALPHA, LIMIT, TEMPERATURE, TOP_P, MAX_TOKENS, NUM_CTX, DISTANCE_CUTOFF
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "embeddinggemma")
@@ -52,7 +52,6 @@ def generate(
     top_p: float = TOP_P,
     num_predict: int = MAX_TOKENS,
     num_ctx: int = NUM_CTX,
-    seed: int | None = SEED,
 ) -> str:
     payload = {
         "model": model,
@@ -65,8 +64,6 @@ def generate(
             "num_ctx": num_ctx,
         },
     }
-    if seed is not None:
-        payload["options"]["seed"] = seed
 
     resp = httpx.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload, timeout=120.0)
     resp.raise_for_status()
@@ -79,25 +76,25 @@ def prompt(collection, query: str):
         return "I don't have that information in my sources.", []
 
     sources = "\n\n".join(
-    f"[Source {i+1}] {c['heading']}\nURL: {c['url']}\n{c['chunk']}"
-    for i, c in enumerate(chunks)
+    f"From {c['heading'] or c['url']}\n{c['chunk']}"
+    for c in chunks
 )
 
     prompt = f"""You are Blaa AI, an assistant that answers questions about local government services in Waterford, Ireland.
 
-                You answer ONLY from the SOURCES provided below. Follow these rules:
+Answer using ONLY the reference material provided below. Follow these rules:
 
-                1. Use only facts stated in the SOURCES. Do not add information from your own knowledge.
-                2. Never invent or guess contact details. Only give a phone number, email address, office location, or name of an official if it appears verbatim in the SOURCES.
-                3. If the SOURCES do not contain the answer, tell the user you don't have that information in your sources. Then suggest the user check the relevant council website or contact the council directly. Do not attempt a partial or approximate answer.
-                4. Only answer questions about Waterford local government services, or Waterford CIty generally. If asked about anything else, briefly say it's outside what you cover.
-                5. Do not specify source number or URL in your answer, these will be added seperately. Do not use phrases such as "According to Source 6" or "as mentioned in Source 3", or even include "(Source 2)" after claims - instead say "According to Waterford County Council" or "According to the Planning Department"
+1. Use only facts stated in the reference material. Do not add information from your own knowledge.
+2. When the reference material answers the question, answer it directly and confidently in plain, natural language. State what you know. Do not hedge, do not apologise for details that aren't there.
+3. Never invent or guess contact details. Give a phone number, email address, office location, or name of an official only if it appears word-for-word in the reference material. If a specific detail like this isn't present, simply don't mention it — do not gesture at it or say where it might be found.
+4. Only if the reference material does not answer the question at all: tell the user you don't have that information, and suggest they check the relevant council website or contact the council directly.
+5. Only answer questions about Waterford local government services, or Waterford City generally. If asked about anything else, briefly say it's outside what you cover.
 
-                SOURCES:
-                {sources}
+REFERENCE MATERIAL:
+{sources}
 
-                QUERY:
-                {query}"""
+QUERY:
+{query}"""
 
     result = generate(prompt)
 

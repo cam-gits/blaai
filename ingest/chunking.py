@@ -15,9 +15,40 @@ CONTAINER_SELECTORS = ["main", "article", "div.entry-content", "div.content-area
 
 STRIP_SELECTORS = ["script", "style", "noscript", "svg", "nav", "header", "footer", "form", "div.vitamin-credits"]
 
+DROP_BARE_DATES = True  #drop undated event ads
+DROPPED_PATH = "data/raw/dropped_dates.jsonl"  #audit trail
+
+_MONTH = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+_DAY = r"\d{1,2}(?:st|nd|rd|th)?"
+_YEAR = r"(?:1[0-9]{3}|20[0-9]{2})"  #1000-2099
+_WEEKDAY = r"(?:Mon|Tues?|Wed(?:nes)?|Thur?s?|Fri|Sat(?:ur)?|Sun)(?:day)?"
+_DM = rf"(?:{_DAY}\s+(?:of\s+)?{_MONTH}|{_MONTH}\s+{_DAY})"
+
+DAY_MONTH = re.compile(rf"\b{_DM}\b", re.I)
+DATED_YEAR = re.compile(rf"\b{_DM}[,\s]*(?:of\s+)?{_YEAR}\b", re.I)
+#a range counts as one date
+DATE_RANGE = re.compile(
+    rf"\b{_DM}\s*(?:-|–|—|to|and|until|through)\s*"
+    rf"(?:{_WEEKDAY},?\s+)?(?:{_DAY}(?:\s+(?:of\s+)?{_MONTH})?|{_MONTH}\s+{_DAY})"
+    rf"(?:[,\s]*{_YEAR})?", re.I)
+#recurring facts are evergreen even without a year
+RECURRING = re.compile(
+    r"\b(?:every|each\s+(?:year|month|week)|annual(?:ly)?|yearly|per\s+year"
+    r"|of\s+the\s+given\s+year|season|bank\s+holiday|weekly|monthly)\b", re.I)
+
 
 def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
+
+
+def _bare_dates(text: str) -> List[str]:
+    #day+month occurrences with no year attached, mostly undated event ads
+    if RECURRING.search(text):
+        return []
+    covered = [m.span() for m in DATED_YEAR.finditer(text)]
+    covered += [m.span() for m in DATE_RANGE.finditer(text)]
+    return [m.group(0) for m in DAY_MONTH.finditer(text)
+            if not any(s <= m.start() < e for s, e in covered)]
 
 
 def _canonical_url(url: str) -> str:
@@ -169,7 +200,6 @@ def load_pages(input_path: str):
 
 
 def chonk(input_path: str = IN_PATH, output_path: str = OUT_PATH) -> None:
-    output_path: str = OUT_PATH) -> None:
     pages = 0
     discarded = 0
     skipped = 0
@@ -190,12 +220,19 @@ def chonk(input_path: str = IN_PATH, output_path: str = OUT_PATH) -> None:
     frequency = _page_frequency(records)
     per_page_index: Dict[str, int] = defaultdict(int)
     kept: List[Dict] = []
+    undated: List[Dict] = []
     dropped = 0
 
     for record in records:
         if frequency[record["chunk"]] >= BOILERPLATE_MIN_PAGES:
             dropped += 1
             continue
+        if DROP_BARE_DATES:
+            bare = _bare_dates(record["chunk"])
+            if bare:
+                record["bare_dates"] = bare
+                undated.append(record)
+                continue
         record["chunk_index"] = per_page_index[record["URL"]]
         per_page_index[record["URL"]] += 1
         kept.append(record)
@@ -204,10 +241,16 @@ def chonk(input_path: str = IN_PATH, output_path: str = OUT_PATH) -> None:
         for record in kept:
             out.write(json.dumps(record, ensure_ascii=False) + "\n")
 
+    if undated:
+        with open(DROPPED_PATH, "w", encoding="utf-8") as out:
+            for record in undated:
+                out.write(json.dumps(record, ensure_ascii=False) + "\n")
+
     print(f"read {pages} pages from {input_path}")
     print(f"skipped {skipped} preview/draft URLs")
     print(f"discarded {discarded} pages below the {THRESHOLD}-char gate")
     print(f"dropped {dropped} boilerplate chunks (text on >= {BOILERPLATE_MIN_PAGES} pages)")
+    print(f"dropped {len(undated)} chunks with unanchored dates -> {DROPPED_PATH}")
     print(f"wrote {len(kept)} chunks to {output_path}")
 
 
