@@ -8,7 +8,7 @@ This is a personal project to explore ethical applications of LLMs, it is privac
 
 [![My Skills](https://skillicons.dev/icons?i=py,fastapi,docker,nginx,linux,js,html,css,git)](https://skillicons.dev)
 
-[![Architecture Diagram](images\blaai_rag_architecture.png)]
+![Architecture Diagram](images/blaai_rag_architecture.png)
 
 Scraped civic content is chunked and embedded into a Weaviate vector store, which serves hybrid search (dense vectors + BM25 keyword matching) so both semantic and exact-term queries land. 
 
