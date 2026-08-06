@@ -1,3 +1,6 @@
+> [!NOTE]
+> Blaai is now live at [blaai.ie](https://www.blaai.ie/)
+
 # blaai
 
 A retrieval-augmented chatbot that answers questions about local government services in Waterford, grounded in the council's own published pages, running entirely on self-hosted models.
@@ -64,6 +67,6 @@ A FastAPI backend handles retrieval and prompt construction; answers are generat
 - [x] Evaluation set 
 - [x] Hardening
 - [x] Frontend 
-- [ ] Deployment
+- [x] Deployment
 - [ ] V2 Scraper: include pdf + docx
 - [ ] Improve Chunking: Larger chunks should improve context
