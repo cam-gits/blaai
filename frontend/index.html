@@ -7,35 +7,31 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <h1 class="logo" aria-label="blaai.ie">
-  <span class="b">B</span><span class="l">l</span><span class="a">a</span><span class="a2">a</span><span class="i">i</span><span class="ie">.ie</span>
-  </h1>
 
-  <p class="muted">Ask about Waterford council services.</p>
-  <input id="q" type="text" placeholder="e.g. How do I report a pothole?" />
-  <button id="send">Ask</button>
-  <div id="answer"></div>
+  <ul class="nav">
+    <li><a class="active" href="/index.html">Home</a></li>
+    <li><a href="/privacy.html">Privacy</a></li>
+    <li><a href="/about.html">About</a></li>
+    <li class="right"><a href="https://github.com/cam-gits/blaai" alt="GitHub Repository"><img src="/GitHub.svg"></a></li>
+  </ul>
 
-  <script>
-    const q = document.getElementById("q");
-    const answer = document.getElementById("answer");
+  <div id="content">
+    <h1 class="logo" aria-label="blaai.ie">
+      <span class="b">B</span><span class="l">l</span><span class="a">a</span><span class="ai">ai</span><span class="dot">.</span><span class="i">i</span><span class="e">e</span>
+    </h1>
 
-    document.getElementById("send").addEventListener("click", async () => {
-      const question = q.value.trim();
-      if (!question) return;
-      answer.textContent = "…";
-      try {
-        const res = await fetch("/api/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
-        });
-        const data = await res.json();
-        answer.textContent = data.answer ?? JSON.stringify(data);
-      } catch (e) {
-        answer.textContent = "Error: " + e.message;
-      }
-    });
-  </script>
+    <p class="subheading">Ask about Waterford council services.</p>
+
+    <form id="ask-form">
+      <input id="q" type="text" placeholder="e.g. What is HAP?" />
+      <button id="send">Ask</button>
+    </form>
+
+    <div id="answer" aria-live="polite" aria-atomic="false"></div>
+
+  </div>
+
+  <script src="blaai.js"></script>
+
 </body>
 </html>

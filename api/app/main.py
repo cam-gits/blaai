@@ -1,9 +1,12 @@
 import os
+import json
 import httpx
 import weaviate
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 
 from app import retrieval
 
@@ -15,6 +18,9 @@ LLM_MODEL = os.environ["LLM_MODEL"]
 
 COLLECTION_NAME = "blaai_collection"
 
+log = logging.getLogger("blaai")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     #Open one Weaviate connection for the life of the process
@@ -25,10 +31,11 @@ async def lifespan(app: FastAPI):
     finally:
         app.state.client.close()
 
+
 app = FastAPI(title="Blaai API", lifespan=lifespan)
 
 class Query(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=500)
 
 
 @app.get("/health")
@@ -58,12 +65,47 @@ async def health_deps():
     return results
 
 
+def _line(obj) -> str:
+    #one JSON object per line - NDJSON
+    return json.dumps(obj, ensure_ascii=False) + "\n"
+
+
 @app.post("/ask")
 def ask(query: Query):
-    """
-    To do:
-      4. Stream the LLM response back
-    """
-    answer, urls = retrieval.prompt(app.state.collection, query.question)
+    #Retrieval runs before the response starts, so failures here can still
+    #return a real status code. Once the first byte is sent, the status is
+    #committed and problems have to be reported inside the stream instead.
+    try:
+        prompt_text, urls = retrieval.build_context(app.state.collection, query.question)
+    except httpx.TimeoutException:
+        log.exception("upstream timeout during retrieval")
+        raise HTTPException(504, "Search took too long. Please try again.")
+    except httpx.HTTPError:
+        log.exception("upstream failure during retrieval")
+        raise HTTPException(502, "Search is unavailable right now.")
+    except Exception:
+        log.exception("unhandled error during retrieval")
+        raise HTTPException(500, "Something went wrong handling that question.")
 
-    return {"received": query.question, "answer": answer}
+    def stream():
+        #Refused by the distance gate - answer without troubling the model
+        if prompt_text is None:
+            yield _line({"type": "token", "text": retrieval.REFUSAL})
+            yield _line({"type": "done", "sources": []})
+            return
+
+        try:
+            for token in retrieval.generate_stream(prompt_text):
+                yield _line({"type": "token", "text": token})
+        except Exception:
+            log.exception("generation failed mid-stream")
+            yield _line({"type": "error", "message": "The answer was cut short. Please try again."})
+            return
+
+        yield _line({"type": "done", "sources": urls})
+
+    return StreamingResponse(
+        stream(),
+        media_type="application/x-ndjson",
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-store"},
+    )

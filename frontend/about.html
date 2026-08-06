@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlaAI</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <ul class="nav">
+    <li><a href="/index.html">Home</a></li>
+    <li><a href="/privacy.html">Privacy</a></li>
+    <li><a class="active" href="/about.html">About</a></li>
+    <li class="right"><a href="https://github.com/cam-gits/blaai" alt="GitHub Repository"><img src="/GitHub.svg"></a></li>
+  </ul>
+
+  <div id="text-content">
+
+    <h2>About this project</h2>
+
+    <p>This is a personal project to explore ethical applications of LLMs, it is privacy focused, utilising a local LLM, lightweight, non tracking and providing a public good.</p>
+    <p>The results here are promising, however, the quality of answer is not in line with large expensive models. Recall and refusal are quite strong, Blaai is far more likely than not to share an authoritative source where available and admit it's limitations where not. However, the generated answers themselves are frequently incomplete and sometimes a little strange.</p>
+
+    <div class="metrics-wrap">
+        <table class="metrics">
+        <thead>
+            <tr>
+            <th scope="col">Metric</th>
+            <th scope="col">Mean</th>
+            <th scope="col">yes</th>
+            <th scope="col">partial</th>
+            <th scope="col">no</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+            <th scope="row">groundedness</th>
+            <td>0.53</td>
+            <td>2</td>
+            <td>15</td>
+            <td>1</td>
+            </tr>
+            <tr>
+            <th scope="row">correctness</th>
+            <td>0.42</td>
+            <td>1</td>
+            <td>13</td>
+            <td>4</td>
+            </tr>
+        </tbody>
+        </table>
+    </div>
+
+  </div>
+
+</body>
+</html>

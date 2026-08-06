@@ -82,7 +82,7 @@ def extract_blocks(html: str) -> List[Dict[str, str]]:
         for node in tree.css(sel):
             node.decompose()
  
-    container = _pick_container(html_tree := tree) and _pick_container(tree)
+    container = _pick_container(html_tree := tree)
     if container is None:
         return []
  

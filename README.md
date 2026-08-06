@@ -4,6 +4,38 @@ A retrieval-augmented chatbot that answers questions about local government serv
 
 This is a personal project to explore ethical applications of LLMs, it is privacy focused, utilising a local LLM, lightweight, non tracking and providing a public good.
 
+## Performance Evaluation
+
+I built out a 26 question evaluation spanning routine, multitopic, out of scope and adversarial queries, each with extended sample answers and a gold standard source drawn from the database.
+
+I then performed scripted testing measuring:
+
+* Recall - Is the gold standard source cited, and at what rank?
+* Refusal - Are out-of-scope and adversarial questions declined?
+* Groundedness - Faithhfulness to the source material
+* Correctness - Accuracy
+
+Groundedness and correctness were assessed using LLM-as-a-Judge, a locally hosted LLM graded yes/partial/no against the retrieved context and the reference answer.
+
+### Results
+
+Retrieval recall (gold source URL cited): 100.0%
+  mean rank when retrieved: 2.72
+
+Refusal accuracy: 87.5% 
+
+Answer quality (qwen2.5:7b judge):
+| Metric | Mean | Yes | Partial | No |
+| --- | --- | --- | --- | --- |
+| *groundedness* | 0.53 | 2 | 15 | 1 |
+| *correctness* | 0.42 | 1 | 13 | 4 |
+
+### Conclusion
+
+Recall and refusal are quite strong, especially given the limitations of the system and source material. However The system is not giving wholly correct answers, diving into the results the typical answer is partial. Not entirely inaccurate just not whole.
+
+I believe this can be improved by expanding data ingestion to include .pdf and .docx files, and changing chunking parameters to increase the size of chunks embedded. 
+
 ## Architecture and Tools
 
 [![My Skills](https://skillicons.dev/icons?i=py,fastapi,docker,nginx,linux,js,html,css,git)](https://skillicons.dev)
@@ -27,8 +59,11 @@ A FastAPI backend handles retrieval and prompt construction; answers are generat
 - [x] Retrieval
 - [x] Generation
 - [x] Response Hardening
-- [ ] Citation space in UI
-- [ ] Streamed token responses
-- [ ] Evaluation set — retrieval recall, refusal accuracy, latency
-- [ ] Hardening — TLS, error handling, request logging, bound internal ports
+- [x] Citation space in UI
+- [x] Streamed token responses
+- [x] Evaluation set 
+- [x] Hardening
+- [x] Frontend 
 - [ ] Deployment
+- [ ] V2 Scraper: include pdf + docx
+- [ ] Improve Chunking: Larger chunks should improve context
