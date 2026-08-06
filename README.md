@@ -22,7 +22,7 @@ Groundedness and correctness were assessed using LLM-as-a-Judge, a locally hoste
 ### Results
 
 Retrieval recall (gold source URL cited): 100.0%
-  mean rank when retrieved: 2.72
+Mean rank when retrieved: 2.72
 
 Refusal accuracy: 87.5% 
 
