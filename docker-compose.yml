@@ -64,7 +64,6 @@ services:
       - "127.0.0.1:11434:11434"
     environment:
       # Keep models resident indefinitely instead of the 5m default.
-      # Cold load costs ~8.9s TTFT vs ~0.7s warm - that gap is residency, not inference.
       OLLAMA_KEEP_ALIVE: "-1"
     volumes:
       - ollama_data:/root/.ollama
